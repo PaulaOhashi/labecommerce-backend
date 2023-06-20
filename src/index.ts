@@ -40,6 +40,7 @@ app.get('/products',(req:Request,res:Response)=>{
     }
 })
 
+//cadastrar usuário
 app.post('/users',(req:Request,res:Response)=>{
     const id = req.body.id as string
     const name = req.body.name as string
@@ -60,6 +61,7 @@ app.post('/users',(req:Request,res:Response)=>{
     res.status(201).send("Cadastro realizado com sucesso")
 })
 
+//cadastrar produto
 app.post('/products',(req:Request,res:Response)=>{
     const id = req.body.id as string
     const name = req.body.name as string
@@ -80,6 +82,8 @@ app.post('/products',(req:Request,res:Response)=>{
     res.status(201).send("Produto cadastrado com sucesso")
 })
 
+
+//delete user
 app.delete("/users/:id",(req:Request,res:Response)=>{
     const id = req.params.id
 
@@ -89,4 +93,41 @@ app.delete("/users/:id",(req:Request,res:Response)=>{
         users.splice(accountToDelete,1)
     }
     res.status(200).send("User apagado com sucesso")
+})
+
+//delete product
+app.delete("/products/:id",(req:Request,res:Response)=>{
+    const id = req.params.id
+
+    const accountToDelete = products.findIndex((product)=>product.id===id)
+
+    if(accountToDelete >= 0){
+        products.splice(accountToDelete,1)
+    }
+    res.status(200).send("Produto apagado com sucesso")
+})
+
+//Editar Produto
+app.put("/products/:id",(req:Request,res:Response)=>{
+    const id = req.params.id
+
+    const newId = req.body.id as string | undefined
+    const newName = req.body.name as string | undefined
+    const newPrice = req.body.price as number | undefined
+    const newDescription = req.body.description as string | undefined
+    const newImageUrl = req.body.imageUrl as string | undefined
+
+    const product = products.find((prod)=>prod.id === id)
+
+    if(product){
+        product.id = newId || product.id
+        product.name = newName || product.name
+        product.price = newPrice || product.price
+        product.description = newDescription || product.description
+        product.imageUrl = newImageUrl || product.imageUrl
+    }else{
+        res.status(200).send("Id não localizado!")
+    }
+
+    res.status(200).send("Produto atualizado com sucesso!")
 })
