@@ -29,15 +29,22 @@ VALUES("u004","Paula","paula@email.com","1234",DATE('now'));
 DELETE FROM users
 WHERE id = "u004";
 
+--Edita usuário
+UPDATE users
+SET id = "u006"
+WHERE
+    id = "u001";
 ---------------------PRODUCTS--------------------
 --Criando a tabela
 CREATE TABLE products(
-    id TEXT PRIMARY KEY UNIQUE NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
     price REAL NOT NULL,
     description TEXT NOT NULL,
     image_url TEXT NOT NULL
 );
+
+DROP TABLE products;
 
 --Inserindo Produtos na tabela
 INSERT INTO products(id,name,price,description,image_url)
@@ -67,7 +74,8 @@ WHERE id = "pro001";
 
 --Edit product by ID
 UPDATE products
-SET name = "Notebook",
+SET id = "pro000",
+    name = "Notebook",
     price = "6000",
     description = "mimimi",
     image_url = "bbbb"
@@ -77,20 +85,24 @@ WHERE
 ------------------------------PEDIDOS-----------------------
 --Create table purchases
 CREATE TABLE purchases(
-    id TEXT PRIMARY KEY UNIQUE NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL,
     buyer TEXT NOT NULL,
     total_price REAL NOT NULL,
     created_at TEXT NOT NULL,
-    FOREIGN KEY (buyer) REFERENCES users(id) 
+    FOREIGN KEY (buyer) REFERENCES users(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
 );
+
+DROP TABLE purchases;
 
 --Get all purchases
 SELECT * FROM purchases;
 
 --Insert purchases
 INSERT INTO purchases(id,buyer,total_price,created_at)
-VALUES("p001","Beltrana",2000,DATE('now')),
-      ("p002","Ciclano",500,DATE('NOW'));
+VALUES("c001","u001",2000,DATE('now')),
+      ("c002","u002",500,DATE('NOW'));
 
 --Show tables
 SELECT 
@@ -102,4 +114,41 @@ SELECT
     purchases.created_at
 FROM users
 INNER JOIN purchases
-ON purchases.buyer = users.name;
+ON purchases.buyer = users.id;
+
+-----------------------------------Tabela de Referencia----------------------
+--Create table purchases_products
+CREATE TABLE purchases_products(
+    purchase_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    FOREIGN KEY (purchase_id) REFERENCES purchases(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);   
+
+DROP TABLE purchases_products;
+
+INSERT INTO purchases_products(purchase_id,product_id,quantity)
+VALUES("c001","pro001",5),
+      ("c001","pro002",3),
+      ("c002","pro003",5);
+
+SELECT
+    purchases.id AS Purchase,
+    purchases.created_at AS Created_data,
+    users.name,
+    purchases.buyer AS Buyer,
+    purchases.total_price AS totalPrice,
+    purchases_products.product_id AS productID,
+    purchases_products.quantity,
+    products.name AS ProcductName,
+    products.description,
+    products.price
+FROM purchases_products
+INNER JOIN purchases ON purchases.id = purchases_products.purchase_id
+INNER JOIN products ON products.id = purchases_products.product_id
+INNER JOIN users ON users.id = purchases.buyer;
