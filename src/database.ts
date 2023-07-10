@@ -1,4 +1,4 @@
-import { TUser,TProduct } from "./types";
+/* import { TUser,TProduct } from "./types";
 
 
 export const users: TUser[] = [
@@ -73,4 +73,4 @@ export const searchProductsByName = (name:string) => {
          if(check) return product
     })
     return(result.length > 0? result:'nao')
-}
+} */

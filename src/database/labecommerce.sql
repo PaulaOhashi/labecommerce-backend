@@ -27,7 +27,7 @@ VALUES("u004","Paula","paula@email.com","1234",DATE('now'));
 
 --Delet user by ID
 DELETE FROM users
-WHERE id = "u004";
+WHERE id = "u001";
 
 --Edita usuário
 UPDATE users

@@ -1,8 +1,6 @@
-import { products,users } from "./database";
-import { getAllUsers,createUser,createProduct,getAllProducts,searchProductsByName } from "./database";
 import  express, { Request, Response} from 'express'
 import cors from 'cors'
-import { TProduct,TUser } from "./types"
+import { db } from "./database/knex";
 
 const app = express()
 app.use(express.json())
@@ -15,45 +13,31 @@ app.listen(3003, () => {
 app.get('/ping',(req:Request,res:Response)=>{
     res.send("Pong!")
 })
+//=================================================================================
+//===============================ENDPOINTS OF USERS================================
 
-//Get all users
-app.get('/users',(req:Request,res:Response)=>{
+//====================Get all users=========================
+app.get('/users',async(req:Request,res:Response)=>{
     try {
-        res.status(200).send(users)
-    } catch (error) {
-        console.log(error)
-        if(res.statusCode === 200){
-            res.status(500)
-        }
-    }
-})
-
-//Get Products
-app.get('/products',(req:Request,res:Response)=>{
-    try {
-        const q = req.query.q as string
-        
-        if(q!==undefined){
-        const result: TProduct[] = products.filter((product) => product.name.toLowerCase().includes(q.toLowerCase()))
+        const result = await db.raw(`SELECT * FROM users`)
         res.status(200).send(result)
-        }else{
-            return res.status(200).send(products)
-        }
     } catch (error) {
         console.log(error)
-        if(res.statusCode === 200){
+
+        if (req.statusCode === 200) {
             res.status(500)
         }
-        if(error instanceof Error){
+
+        if (error instanceof Error) {
             res.send(error.message)
-        }else{
+        } else {
             res.send("Erro inesperado")
         }
     }
 })
 
-//cadastrar usuário
-app.post('/users',(req:Request,res:Response)=>{
+//======================Create user===========================
+app.post('/users',async(req:Request,res:Response)=>{
     try {
         const id = req.body.id
         const name = req.body.name 
@@ -61,8 +45,14 @@ app.post('/users',(req:Request,res:Response)=>{
         const password = req.body.password 
         const createdAt = req.body.createdAt 
 
-        const existingUser = users.find((user) => user.id === id)
-        const existingEmail = users.find((user)=>user.email===email)
+        const [existingUser] = await db.raw(`
+            SELECT * FROM users
+            WHERE id = "${id}" 
+        `)
+        const [existingEmail] = await db.raw(`
+            SELECT * FROM users
+            WHERE email = "${email}" 
+        `)
 
         if(id!==undefined){
             if(typeof(id)!=="string"){
@@ -122,17 +112,13 @@ app.post('/users',(req:Request,res:Response)=>{
             throw new Error("O createdAt é obrigatório!")
         }
         
-        const newUser:TUser = {
-            id,
-            name,
-            email,
-            password,
-            createdAt
-        }
+        await db.raw(`
+            INSERT INTO users(id,name,email,password,created_at)
+            VALUES("${id}","${name}","${email}","${password}","${createdAt}")
+        `)
 
-        users.push(newUser)
-
-        res.status(201).send("Cadastro realizado com sucesso")    
+        res.status(201).send("Cadastro realizado com sucesso")  
+          
     }catch(error){
         console.log(error)
         if(res.statusCode === 200){
@@ -147,8 +133,77 @@ app.post('/users',(req:Request,res:Response)=>{
     
 })
 
-//cadastrar produto
-app.post('/products',(req:Request,res:Response)=>{
+//======================delete user==========================
+app.delete("/users/:id",async(req:Request,res:Response)=>{
+    try {
+        const idToDelete = req.params.id
+
+        if(idToDelete && idToDelete[0]!=="u"){
+            res.status(400)
+            throw new Error('Id inválido! Deve começar coma a letra "u"')
+        }
+       
+        const [accountToDelete] = await db.raw(`
+            SELECT * FROM users
+            WHERE id = "${idToDelete}"
+        `)
+
+        if(!accountToDelete){
+            res.status(404)
+            throw new Error("id não encontrado!")
+        }
+
+        await db.raw(`
+            DELETE FROM users
+            WHERE id = "${idToDelete}"
+        `)
+
+        res.status(200).send("User apagado com sucesso")
+
+    } catch (error) {
+        if(error instanceof Error){
+            res.send(error.message)
+        }else{
+            res.status(500).send("Erro desconhecido")
+        }
+    }
+    
+})
+
+//===================================================================================
+//==========================ENDPOINTS OF PRODUCTS====================================
+
+//==========Search product by name or all products================
+app.get('/products',async(req:Request,res:Response)=>{
+    try {
+        const q = req.query.name as string
+        const allProducts = await db.raw(`SELECT * FROM products`) 
+        
+        if(q){
+            const [result] = await db.raw(`
+            SELECT * FROM products 
+            WHERE LOWER(name) = LOWER("${q}")
+        `)
+            res.status(200).send(result)
+        }else{
+            res.status(200).send(allProducts)
+        }
+
+    } catch (error) {
+        console.log(error)
+        if(res.statusCode === 200){
+            res.status(500)
+        }
+        if(error instanceof Error){
+            res.send(error.message)
+        }else{
+            res.send("Erro inesperado")
+        }
+    }
+}) 
+
+//=====================Create Product=====================
+ app.post('/products',async(req:Request,res:Response)=>{
     try {
         const id = req.body.id 
         const name = req.body.name 
@@ -156,7 +211,10 @@ app.post('/products',(req:Request,res:Response)=>{
         const description = req.body.description 
         const imageUrl = req.body.imageUrl
         
-        const existingProduct = products.find((product) => product.id === id)
+        const [existingProduct] = await db.raw(`
+            SELECT * FROM products
+            WHERE id = "${id}"
+        `) 
 
         if(id!==undefined){
             if(typeof(id)!=="string"){
@@ -212,15 +270,10 @@ app.post('/products',(req:Request,res:Response)=>{
             throw new Error("O imageUrl é obrigatório!")
         }
     
-        const newProduct:TProduct = {
-            id,
-            name,
-            price,
-            description,
-            imageUrl
-        }
-    
-        products.push(newProduct)
+        await db.raw(`
+            INSERT INTO products
+            VALUES("${id}","${name}","${price}","${description}","${imageUrl}")
+        `)
     
         res.status(201).send("Produto cadastrado com sucesso")    
     } catch (error) {
@@ -236,71 +289,49 @@ app.post('/products',(req:Request,res:Response)=>{
     }
     
     
-})
+}) 
 
-
-//delete user
-app.delete("/users/:id",(req:Request,res:Response)=>{
+//======================delete product===========================
+app.delete("/products/:id",async(req:Request,res:Response)=>{
     try {
-        const id = req.params.id
-        if(id && id[0]!=="u"){
-            res.status(400)
-            throw new Error('Id inválido! Deve começar coma a letra "u"')
-        }
-        const accountToDelete = users.findIndex((user)=>user.id===id)
-        if(accountToDelete<0){
-            res.status(404)
-            throw new Error("Usuário não encontrado!")
-        }
+        const idToDelete = req.params.id
 
-        if(accountToDelete >= 0){
-        users.splice(accountToDelete,1)
-        }
-
-        res.status(200).send("User apagado com sucesso")
-    } catch (error) {
-        if(error instanceof Error){
-            res.send(error.message)
-        }else{
-            res.status(500).send("Erro desconhecido")
-        }
-    }
-    
-})
-
-//delete product
-app.delete("/products/:id",(req:Request,res:Response)=>{
-    try {
-        const id = req.params.id
-        if(id && id[0]!=="p" && id[1]!=="r" && id[2]!=="o" && id[3]!=="d"){
+        if(idToDelete && idToDelete[0]!=="p" && idToDelete[1]!=="r" && idToDelete[2]!=="o" && idToDelete[3]!=="d"){
             res.status(400)
             throw new Error('Id inválido! Deve começar com "prod"')
         }
-    
-        const accountToDelete = products.findIndex((product)=>product.id===id)
-        if(accountToDelete<0){
+       
+        const [accountToDelete] = await db.raw(`
+            SELECT * FROM products
+            WHERE id = "${idToDelete}"
+        `)
+
+        if(!accountToDelete){
             res.status(404)
-            throw new Error("Usuário não encontrado")
+            throw new Error("id não encontrado!")
         }
-        if(accountToDelete >= 0){
-            products.splice(accountToDelete,1)
-        }
+
+        await db.raw(`
+            DELETE FROM products
+            WHERE id = "${idToDelete}"
+        `)
+
         res.status(200).send("Produto apagado com sucesso")
-        
+
     } catch (error) {
         if(error instanceof Error){
             res.send(error.message)
         }else{
             res.status(500).send("Erro desconhecido")
-        }  
+        }
     }
     
 })
 
-//Editar Produto
-app.put("/products/:id",(req:Request,res:Response)=>{
+//======================Edit Product=======================
+app.put("/products/:id",async(req:Request,res:Response)=>{
     try {
-        const id = req.params.id
+        const idToEdit = req.params.id
 
         const newId = req.body.id 
         const newName = req.body.name 
@@ -354,14 +385,23 @@ app.put("/products/:id",(req:Request,res:Response)=>{
             }
         }
 
-        const product = products.find((prod)=>prod.id === id)
+        const [product] = await db.raw(`
+            SELECT * FROM products
+            WHERE id = "${idToEdit}"
+        `)
 
         if(product){
-            product.id = newId || product.id
-            product.name = newName || product.name
-            product.price = newPrice || product.price
-            product.description = newDescription || product.description
-            product.imageUrl = newImageUrl || product.imageUrl
+            await db.raw(`
+                UPDATE products
+                SET
+                    id = "${newId || product.id}",
+                    name = "${newName || product.name}",
+                    price = "${newPrice || product.price}",
+                    description = "${newDescription || product.description}",
+                    image_url = "${newImageUrl || product.image_url}"
+                WHERE
+                    id = "${idToEdit}"
+            `)
         }else{
             res.status(200).send("Id não localizado!")
         }
@@ -374,4 +414,175 @@ app.put("/products/:id",(req:Request,res:Response)=>{
             res.status(500).send("Erro desconhecido")
         }
     }
+}) 
+
+//========================Get Products by id===================
+app.get("/products/:id",async(res:Response,req:Request)=>{
+    try {
+        const id = req.params.id
+        const [result] = await db.raw(`
+        SELECT * FROM products
+        WHERE id = "${id}"
+        `)
+
+        if(result){
+            res.status(200).send("Objeto encontrado no arquivo db")
+        }else{
+            res.status(404)
+            throw new Error("Usuário não encontrado!")
+        } 
+    
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
+    }
+    
+}) 
+
+//===========================================================================
+//==============================ENDPOINTS OF PURCHASES=======================
+
+//========================Get Purchases=====================
+app.get('/purchases',async(req:Request,res:Response)=>{
+    try {
+        const result = await db.raw(`SELECT * FROM purchases`)
+        res.status(200).send(result)
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
+    }
 })
+
+//========================Create Purchase=======================
+app.post('/purchases',async(req:Request,res:Response)=>{
+    try {
+        const id = req.body.id 
+        const buyer = req.body.buyer 
+        const total_price = req.body.total_price 
+        const created_at = req.body.created_at 
+                
+        const [existingPurchase] = await db.raw(`
+            SELECT * FROM purchases
+            WHERE id = "${id}"
+        `) 
+
+        if(id!==undefined){
+            if(typeof(id)!=="string"){
+                res.status(422)
+                throw new Error("O id deve ser uma string!")
+            }
+            if(existingPurchase){
+                res.status(409)
+                throw new Error("Já existe uma compra com esse id")
+            }
+        }else{
+            res.status(400)
+            throw new Error("O id é obrigatório!")
+        }
+    
+        if(buyer!==undefined){
+            if(typeof(buyer)!=="string"){
+                res.status(422)
+                throw new Error("O buyer deve ser uma string!")
+            }
+        }else{
+            res.status(400)
+            throw new Error("O buyer é obrigatório!")
+        }
+    
+        if(total_price!==undefined){
+            if(typeof(total_price)!=="number"){
+                res.status(422)
+                throw new Error("O preço deve ser um número!")
+            }
+        }else{
+            res.status(400)
+            throw new Error("O preço é obrigatório!")
+        }
+    
+        if(created_at!==undefined){
+            if(typeof(created_at)!=="string"){
+                res.status(422)
+                throw new Error("A created_at deve ser uma string!")
+            }
+        }else{
+            res.status(400)
+            throw new Error("A created_at é obrigatória!")
+        }
+        
+        await db.raw(`
+            INSERT INTO purchases
+            VALUES("${id}","${buyer}","${total_price}","${created_at}")
+        `)
+    
+        res.status(201).send("Compra cadastrada com sucesso")    
+    } catch (error) {
+        console.log(error)
+        if(res.statusCode === 200){
+            res.status(500)
+        }
+        if(error instanceof Error){
+            res.send(error.message)
+        }else{
+            res.send("Erro inesperado")
+        }
+    }
+    
+})
+
+//============================delete purchase===================
+app.delete("/purchases/:id",async(req:Request,res:Response)=>{
+    try {
+        const idToDelete = req.params.id
+
+        if(idToDelete && idToDelete[0]!=="c"){
+            res.status(400)
+            throw new Error('Id inválido! Deve começar coma a letra "c"')
+        }
+       
+        const [accountToDelete] = await db.raw(`
+            SELECT * FROM purchases
+            WHERE id = "${idToDelete}"
+        `)
+
+        if(!accountToDelete){
+            res.status(404)
+            throw new Error("id não encontrado!")
+        }
+
+        await db.raw(`
+            DELETE FROM purchases
+            WHERE id = "${idToDelete}"
+        `)
+
+        res.status(200).send("Pedido cancelado com sucesso")
+
+    } catch (error) {
+        if(error instanceof Error){
+            res.send(error.message)
+        }else{
+            res.status(500).send("Erro desconhecido")
+        }
+    }
+    
+})
+
+
