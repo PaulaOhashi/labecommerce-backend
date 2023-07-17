@@ -420,7 +420,7 @@ app.put("/products/:id",async(req:Request,res:Response)=>{
 //==============================ENDPOINTS OF PURCHASES=======================
 
 //========================Get Purchases=====================
-/* app.get('/purchases',async(req:Request,res:Response)=>{
+/*  app.get('/purchases',async(req:Request,res:Response)=>{
     try {
         const result = await db.raw(`SELECT * FROM purchases`)
         res.status(200).send(result)
@@ -437,7 +437,7 @@ app.put("/products/:id",async(req:Request,res:Response)=>{
             res.send("Unexpected error")
         }
     }
-}) */
+})  */
 
 //========================Create Purchase=======================
 app.post('/purchases',async(req:Request,res:Response)=>{
@@ -448,6 +448,15 @@ app.post('/purchases',async(req:Request,res:Response)=>{
         const products = req.body.products 
                 
         const [existingPurchase] = await db("purchases").where({id:id})
+        const [ existingUser ] = await db.raw(`
+        SELECT * FROM users
+        WHERE id = "${buyer}";
+        `)
+
+        if(!existingUser){
+            res.status(422)
+            throw new Error("Buyer not found")
+        }
 
         if(id!==undefined){
             if(typeof(id)!=="string"){
@@ -564,7 +573,7 @@ app.get("/purchases/:id",async(req:Request,res:Response)=>{
         const idToSearch = req.params.id
 
         if(idToSearch === ":id"){
-            throw new Error("id is required")
+             throw new Error("id is required")
         }
 
         const [resultPurchase] = await db("purchases")
@@ -599,8 +608,8 @@ app.get("/purchases/:id",async(req:Request,res:Response)=>{
                 ...resultPurchase,
                 products: resultPurchaseProducts
               } 
-        
-         
+              res.status(200).json(result)
+
     } catch (error) {
         console.log(error)
 
