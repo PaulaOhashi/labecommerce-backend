@@ -14,21 +14,21 @@ Primeiro projeto do back-end, onde pratiquei toda a base de criação de uma API
 - Postman
 
 ## Endpoints implementados
-- [x]Get all users
-- [x]Create user
-- [x]Delete user
-- [x]Get all products
-- [x]Create product
-- [x]Edit product by id
-- [x]Delete product
-- [x]Get all purchases
-- [x]Get purchase by id
-- [x]Create purchase
-- [x]Delete purchase by id
+- Get all users
+- Create user
+- Delete user
+- Get all products
+- Create product
+- Edit product by id
+- Delete product
+- Get all purchases
+- Get purchase by id
+- Create purchase
+- Delete purchase by id
 
 ## Requisições (Paths)
 Requisições de Usuários
-- /users
+- /users/
 Requisições de Produtos
 -/products
 Requisições de Compras
