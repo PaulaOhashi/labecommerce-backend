@@ -6,7 +6,7 @@ CREATE TABLE users(
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL 
 );
 
 --Inserindo users na tabela
@@ -27,7 +27,7 @@ VALUES("u004","Paula","paula@email.com","1234",DATE('now'));
 
 --Delet user by ID
 DELETE FROM users
-WHERE id = "u001";
+WHERE id = "002";
 
 --Edita usuário
 UPDATE users
@@ -135,7 +135,8 @@ DROP TABLE purchases_products;
 INSERT INTO purchases_products(purchase_id,product_id,quantity)
 VALUES("c001","pro001",5),
       ("c001","pro002",3),
-      ("c002","pro003",5);
+      ("c002","pro001",2),
+      ("c002","pro003",1);
 
 SELECT
     purchases.id AS Purchase,
