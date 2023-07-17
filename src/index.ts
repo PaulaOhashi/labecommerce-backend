@@ -344,9 +344,6 @@ app.put("/products/:id",async(req:Request,res:Response)=>{
             if(typeof(newId)!=="string"){
                 res.status(422)
                 throw new Error("id must be a string")
-            }if(newId[0]!=="p" && newId[1]!=="r" && newId[2]!=="o" && newId[3]!=="d"){
-                res.status(400)
-                throw new Error("id must start whith 'prod'")
             }
         }
 
@@ -573,7 +570,8 @@ app.get("/purchases/:id",async(req:Request,res:Response)=>{
         const idToSearch = req.params.id
 
         if(idToSearch === ":id"){
-             throw new Error("id is required")
+            res.status(400)
+            throw new Error("id is required")
         }
 
         const [resultPurchase] = await db("purchases")
@@ -588,9 +586,10 @@ app.get("/purchases/:id",async(req:Request,res:Response)=>{
         .innerJoin("users", "purchases.buyer","=", "users.id")
         .where("purchases.id", "=", idToSearch)
 
-        if(resultPurchase===undefined){
-            res.status(400).send({message: "Purchase not found"})
-          }
+         if(!resultPurchase){
+            res.status(400)
+            throw new Error('id not found!')
+          } 
  
         const resultPurchaseProducts = await
         db("purchases_products")
