@@ -154,11 +154,10 @@ Deleta uma compra
 Pedido cancelado com sucesso
 ```
 
-# Link para a coleção de requisições no Postman
+## Link para a coleção de requisições no Postman
 https://documenter.getpostman.com/view/26594526/2s93z5AR5e
 
-# Autores
-# Autores
+## Autores
 [<img src="https://github.com/PaulaOhashi/labecommerce-backend/assets/107084846/d9ecbcb0-07da-44e1-a511-60f604e9d1bb" width=115><br><sub>Paula Iumi Ohashi</sub>](https://github.com/PaulaOhashi)
 
 
